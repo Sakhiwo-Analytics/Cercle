@@ -1,0 +1,52 @@
+services:
+  # Frontend Web Service
+  - type: web
+    name: cercle-frontend-test
+    env: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/build
+    envVars:
+      - key: REACT_APP_SUPABASE_URL
+        sync: false
+      - key: REACT_APP_SUPABASE_ANON_KEY
+        sync: false
+      - key: REACT_APP_API_URL
+        value: https://cercle-api-test.onrender.com
+      - key: REACT_APP_AI_API_URL
+        value: https://cercle-ai-test.onrender.com
+
+  # Node.js Backend Service
+  - type: web
+    name: cercle-api-test
+    env: node
+    buildCommand: cd backend/node-services && npm ci
+    startCommand: cd backend/node-services && npm start
+    envVars:
+      - key: NODE_ENV
+        value: test
+      - key: PORT
+        value: 8000
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false
+
+  # Python FastAPI Service
+  - type: web
+    name: cercle-ai-test
+    env: python
+    buildCommand: cd backend/python-services && pip install -r requirements.txt
+    startCommand: cd backend/python-services && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: test
+      - key: PORT
+        value: 8001
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false

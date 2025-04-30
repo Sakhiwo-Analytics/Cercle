@@ -1,0 +1,65 @@
+name: Python Backend CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/python-services/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/python-services/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+        cache-dependency-path: backend/python-services/requirements.txt
+    
+    - name: Install dependencies
+      run: |
+        cd backend/python-services
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8 pytest
+    
+    - name: Lint with flake8
+      run: |
+        cd backend/python-services
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    
+    - name: Test with pytest
+      run: |
+        cd backend/python-services
+        pytest
+    
+  deploy:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set environment name
+      id: env_name
+      run: |
+        if [ "${{ github.ref }}" = 'refs/heads/main' ]; then
+          echo "ENV_NAME=staging" >> $GITHUB_ENV
+        else
+          echo "ENV_NAME=dev" >> $GITHUB_ENV
+        fi
+    
+    - name: Deploy to Render
+      uses: johnbeynon/render-deploy-action@v0.0.8
+      with:
+        service-id: ${{ secrets.RENDER_PYTHON_SERVICE_ID }}
+        api-key: ${{ secrets.RENDER_API_KEY }}

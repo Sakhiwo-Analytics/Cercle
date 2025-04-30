@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # Frontend service
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - REACT_APP_AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
+    depends_on:
+      - node-api
+
+  # Node.js API service
+  node-api:
+    build:
+      context: ../backend/node-services
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend/node-services:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=8000
+      - DATABASE_URL=${SUPABASE_URL}
+      - DATABASE_KEY=${SUPABASE_KEY}
+      - REDIS_URL=redis://redis:6379
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+    depends_on:
+      - redis
+      - supabase
+
+  # FastAPI service for AI processing
+  fastapi:
+    build:
+      context: ../backend/python-services
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../backend/python-services:/app
+    environment:
+      - ENVIRONMENT=development
+      - PORT=8001
+      - DATABASE_URL=${SUPABASE_URL}
+      - DATABASE_KEY=${SUPABASE_KEY}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+      - supabase
+
+  # Redis for caching
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  # Supabase local development
+  supabase:
+    image: supabase/supabase-local
+    ports:
+      - "8080:8080"  # REST API
+      - "5432:5432"  # PostgreSQL
+    volumes:
+      - supabase-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=${SUPABASE_DB_PASSWORD}
+
+volumes:
+  redis-data:
+  supabase-data:
