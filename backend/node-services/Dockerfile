@@ -7,6 +7,10 @@ RUN npm ci
 
 COPY . .
 
+# Fix permissions for executables in node_modules/.bin
+RUN chmod -R 755 ./node_modules/.bin
+
 EXPOSE 8000
 
-CMD ["npm", "run", "dev"]
+# Use npm start for production (uses node directly instead of nodemon)
+CMD ["npm", "start"]
