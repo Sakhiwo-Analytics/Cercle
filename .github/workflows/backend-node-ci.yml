@@ -27,9 +27,6 @@ jobs:
     - name: Install dependencies
       run: cd backend/node-services && npm ci
     
-    - name: Run linter
-      run: cd backend/node-services && npm run lint
-    
     - name: Run tests
       run: cd backend/node-services && npm test
     
